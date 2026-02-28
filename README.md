@@ -1,2 +1,2 @@
 # github-labs
-practices of github
+This repository is practices of github
