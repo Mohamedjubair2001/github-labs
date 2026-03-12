@@ -90,9 +90,9 @@ sudo apt install postgresql postgresql-contrib -y
 
 sudo systemctl enable postgresql
 
-sudo systemctl start PostgreSQL
+sudo systemctl start postgresql
 
-sudo systemctl status PostgreSQL
+sudo systemctl status postgresql
 
 psql --version
 
@@ -107,6 +107,8 @@ ALTER USER ddsonar WITH ENCRYPTED password 'Jubair@123';
 CREATE DATABASE ddsonarqube OWNER ddsonar;
 
 GRANT ALL PRIVILEGES ON DATABASE ddsonarqube to ddsonar;
+\l
+\du
 
 sudo apt install zip -y
 
@@ -114,7 +116,7 @@ sudo wget https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-10.0
 
 sudo unzip sonarqube-10.0.0.68432.zip
 
-sudo mv sonarqube-10.0.0.68432 SonarQube
+sudo mv sonarqube-10.0.0.68432 sonarqube
 
 sudo mv sonarqube /opt/
 
@@ -275,6 +277,7 @@ pipeline {
         }
     }
 }
+
 
 
 
