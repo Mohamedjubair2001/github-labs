@@ -1,0 +1,269 @@
+wget https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.115/bin/apache-tomcat-9.0.115.zip
+
+apt install unzip -y
+
+unzip apache-tomcat-9.0.115.zip
+
+pipeline {
+    tools{
+        maven 'mymaven'
+    }
+    agent any
+    stages {
+        stage('Step 1 : CloneRepo') {
+            steps {
+                echo "Cloning Repo"
+                git "https://github.com/NikitasGithub/DevOpsClassCodes.git"
+                echo "Repo cloned"
+            }
+        }
+        stage('Step 2 : Compile') {
+            steps {
+                sh "mvn compile"
+                echo "compiled succesfully"
+            }
+        }
+        stage('Step 3 : Code Review') {
+            steps {
+                echo "starting code review"
+                sh "mvn pmd:pmd"
+            }
+            post{
+                success{
+                    recordIssues(tools: [pmdParser(pattern: '**/pmd.xml')])
+                }
+            }
+        }
+        stage ('Step 3 : Unit Test'){
+            steps{   
+             sh  'mvn test'  
+            }
+            post{
+                success{
+                    junit 'target/surefire-reports/*.xml'
+                }
+            }
+        }
+        stage('Step 4 : package'){
+            steps{
+                sh 'mvn package'
+            }
+        }
+	stage("deployment of the app"){
+            steps{
+            	sh "sudo mv ${WORKSPACE}/target/addressbook.war /home/ubuntu/apache-tomcat-9.0.115/webapps"
+            }
+    	}
+    }
+}
+
+jenkins ALL=(ALL:ALL) NOPASSWD: ALL
+
+sudo service jenkins restart
+
+publicip:9090/addressbook
+
+
+SonarQube installation
+
+sudo apt update
+
+sudo apt upgrade -y
+
+sudo apt install -y openjdk-17-jdk
+
+sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" /etc/apt/sources.list.d/pgdg.list'
+
+wget -q https://www.postgresql.org/media/keys/ACCC4CF8.asc -O - | sudo apt-key add –
+
+sudo apt install postgresql postgresql-contrib -y
+
+sudo systemctl enable postgresql
+
+sudo systemctl start PostgreSQL
+
+sudo systemctl status PostgreSQL
+
+psql --version
+
+sudo -i -u postgres
+
+createuser ddsonar
+
+Psql
+
+ALTER USER ddsonar WITH ENCRYPTED password 'Jubair@123';
+
+CREATE DATABASE ddsonarqube OWNER ddsonar;
+
+GRANT ALL PRIVILEGES ON DATABASE ddsonarqube to ddsonar;
+
+sudo apt install zip -y
+
+sudo wget https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-10.0.0.68432.zip
+
+sudo unzip sonarqube-10.0.0.68432.zip
+
+sudo mv sonarqube-10.0.0.68432 SonarQube
+
+sudo mv sonarqube /opt/
+
+sudo groupadd ddsonar
+
+sudo useradd -d /opt/sonarqube -g ddsonar ddsonar
+
+sudo chown ddsonar:ddsonar /opt/sonarqube -R
+
+sudo nano /opt/sonarqube/conf/sonar.properties
+
+sonar.jdbc.username=ddsonar
+sonar.jdbc.password=Jubair@123
+sonar.jdbc.url=jdbc:postgresql://localhost:5432/ddsonarqube
+
+sudo nano /opt/sonarqube/bin/linux-x86-64/sonar.sh
+RUN_AS_USER=ddsonar
+
+sudo nano /etc/systemd/system/sonar.service
+
+[Unit]
+Description=SonarQube service
+After=syslog.target network.target
+[Service]
+Type=forking
+ExecStart=/opt/sonarqube/bin/linux-x86-64/sonar.sh start
+ExecStop=/opt/sonarqube/bin/linux-x86-64/sonar.sh stop
+User=ddsonar
+Group=ddsonar
+Restart=always
+LimitNOFILE=65536
+LimitNPROC=4096
+[Install]
+WantedBy=multi-user.target
+
+sudo systemctl enable sonar
+sudo systemctl start sonar
+
+sudo systemctl status sonar
+
+sudo nano /etc/sysctl.conf
+
+vm.max_map_count=262144
+fs.file-max=65536
+ulimit -n 65536
+ulimit -u 4096
+
+sudo reboot
+
+pipeline{
+    agent any
+    stages{
+        stage('github validation new'){
+          steps{
+                 git url: 'https://github.com/akshu20791/addressbook-cicd-project'
+          }
+        }
+        stage('compiling the code'){
+          steps{
+                 sh 'mvn compile'
+          }
+        }
+        stage('testing the code'){
+            steps{
+                sh 'mvn test'
+            }
+        }
+        stage('qa of the code'){
+            steps{
+                withSonarQubeEnv('Sonarqubeserver') {
+                    sh 'mvn clean compile org.sonarsource.scanner.maven:sonar-maven-plugin:3.9.1.2184:sonar'
+                }
+            }
+        }
+        stage('package'){
+            steps{
+                sh 'mvn package'
+            }
+        }
+    }
+}
+
+pipeline {
+
+    agent any
+
+    tools {
+        maven 'mymaven'
+    }
+
+    stages {
+
+        stage('Step 1 : Clone Repository') {
+            steps {
+                echo "Cloning repository from GitHub"
+                git 'https://github.com/akshu20791/addressbook-cicd-project'
+            }
+        }
+
+        stage('Step 2 : Compile Code') {
+            steps {
+                echo "Compiling the project"
+                sh 'mvn clean compile'
+            }
+        }
+
+        stage('Step 3 : Code Review (PMD)') {
+            steps {
+                echo "Running PMD code analysis"
+                sh 'mvn pmd:pmd'
+            }
+            post {
+                success {
+                    recordIssues tools: [pmdParser(pattern: '**/pmd.xml')]
+                }
+            }
+        }
+
+        stage('Step 4 : Unit Testing') {
+            steps {
+                echo "Running unit tests"
+                sh 'mvn test'
+            }
+            post {
+                success {
+                    junit 'target/surefire-reports/*.xml'
+                }
+            }
+        }
+
+        stage('Step 5 : SonarQube Analysis') {
+            steps {
+                echo "Starting SonarQube scan"
+                withSonarQubeEnv('sonarqubeserver') {
+                    sh 'mvn clean verify sonar:sonar'
+                }
+            }
+        }
+
+        stage('Step 6 : Package Application') {
+            steps {
+                echo "Packaging the application"
+                sh 'mvn package'
+            }
+        }
+
+        stage('Deployment of the App') {
+            steps {
+                sh "sudo mv ${WORKSPACE}/target/addressbook.war /home/ubuntu/apache-tomcat-9.0.115/webapps/"
+            }
+        }
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 10, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+    }
+}
+
+
